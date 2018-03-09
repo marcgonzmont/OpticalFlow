@@ -1,8 +1,6 @@
-import math
 import numpy as np
 import numpy.linalg as nlin
 import cv2
-from numba import jit
 
 
 def getDerivates(img1, img2, k_gauss):
@@ -52,7 +50,7 @@ def multiplyMatrix(dx, dy, dt):
     return Ix_2, Iy_2, Ixy_2, Ixt_2, Iyt_2
 
 
-def computeOF(fr1, fr2, window, A, B, uv_desp, k_gauss):
+def computeOF(fr1, fr2, window, step, A, B, k_gauss):
     '''
 
     :param fr1:
@@ -60,15 +58,14 @@ def computeOF(fr1, fr2, window, A, B, uv_desp, k_gauss):
     :param window:
     :param A:
     :param B:
-    :param uv_desp:
     :param k_gauss:
     :return:
     '''
     img1 = fr1 * 1/255
     img2 = fr2 * 1 / 255
-    optical_flow = np.zeros_like(img2)
+    optical_flow = np.zeros_like(img1)
     h, w = img1.shape[:2]
-    step = math.floor(window / 2)
+
     # step = 1
 
     # Get derivatives and all the algorithm's matrix
@@ -80,8 +77,10 @@ def computeOF(fr1, fr2, window, A, B, uv_desp, k_gauss):
 
     for i in range(h_lim):
         for j in range(w_lim):
-            ii = i * window + step
-            jj = j * window + step
+            # ii = i * window + step
+            # jj = j * window + step
+            ii = i + step
+            jj = j + step
 
             # Summation
             Ix2 = np.sum(Ix_2[ii - step : ii + step, jj - step : jj + step])
@@ -89,6 +88,12 @@ def computeOF(fr1, fr2, window, A, B, uv_desp, k_gauss):
             Ixy = np.sum(Ixy_2[ii - step : ii + step, jj - step : jj + step])
             Ixt = -np.sum(Ixt_2[ii - step : ii + step, jj - step : jj + step])
             Iyt = -np.sum(Iyt_2[ii - step : ii + step, jj - step : jj + step])
+
+            # Ix2 = np.sum(Ix_2[i : window, j : window])
+            # Iy2 = np.sum(Iy_2[i : window, j : window])
+            # Ixy = np.sum(Ixy_2[i : window, j : window])
+            # Ixt = -np.sum(Ixt_2[i : window, j : window])
+            # Iyt = -np.sum(Iyt_2[i : window, j : window])
 
             # Initialization of matrix A
             A[0, 0] = Ix2
@@ -109,9 +114,10 @@ def computeOF(fr1, fr2, window, A, B, uv_desp, k_gauss):
 
             cv2.arrowedLine(img2, (jj, ii), (jj + u, ii + v), (255, 255, 0))
             cv2.arrowedLine(optical_flow, (jj, ii), (jj + u, ii + v), (255, 255, 0))
+
     result = np.concatenate((img2, optical_flow), axis= 1)
     cv2.imshow("Optical flow", result)
     cv2.waitKey(50)
 
-    return img2
+    return result
 
