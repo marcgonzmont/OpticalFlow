@@ -5,7 +5,6 @@ from numba import jit
 from matplotlib import pyplot as plt
 
 
-# @jit
 def getSequences(path):
     '''
     Auxiliary function that extracts folder names from a given path
@@ -18,7 +17,6 @@ def getSequences(path):
     return sequences
 
 
-# @jit
 def getSamples(path, ext=''):
     '''
     Auxiliary function that extracts file names from a given path based on extension
