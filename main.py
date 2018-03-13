@@ -22,9 +22,9 @@ if __name__ == '__main__':
 
     # Configuration
     # mode: 0: LK-pinv, 1: LK-unrolled, 2: Horn&Schunck
-    mode = 0
+    mode = 2
     save = False
-    # 0: blocks, 1: grid, 2: sphere
+    # 0: blocks, 1: grid, 2: postit, 3: sphere
     seq_idx = 0
     conf_seq = {0: '.gif', 1: '.gif', 2: '.jpg', 3: '.ppm'}
     ext = conf_seq[seq_idx]
@@ -94,5 +94,6 @@ if __name__ == '__main__':
         time_taken = time.time() - start
         print("Optical flow takes {:0.3f} seconds for sequence '{}' with window_size = {}".format(time_taken, name_sequence, win))
 
-    cv2.destroyAllWindows()
-    # exit(2)
+    # cv2.destroyAllWindows()
+    print("\nExecution finished! \nExiting program...")
+    exit(0)

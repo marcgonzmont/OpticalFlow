@@ -4,7 +4,8 @@ import cv2
 from numba import jit
 
 
-def getDerivates(img1, img2, k_gauss):
+@jit
+def getDerivative(img1, img2, k_gauss):
     '''
 
     :param img1:
@@ -13,24 +14,25 @@ def getDerivates(img1, img2, k_gauss):
     :return:
     '''
 
-    # Gaussian filter to blur the images and improve temporal derive
+    # Gaussian filter to blur the images and improve temporal derivative
     img1_gauss = cv2.GaussianBlur(img1, k_gauss, 0)
     img2_gauss = cv2.GaussianBlur(img2, k_gauss, 0)
 
     # IMG1
-    dx_1 = cv2.Sobel(img1, cv2.CV_64F, 1, 0, 3)
-    dy_1 = cv2.Sobel(img1, cv2.CV_64F, 0, 1, 3)
+    dx_1 = cv2.Sobel(img1, cv2.CV_64F, 1, 0)
+    dy_1 = cv2.Sobel(img1, cv2.CV_64F, 0, 1)
 
     # IMG2
-    dx_2 = cv2.Sobel(img2, cv2.CV_64F, 1, 0, 3)
-    dy_2 = cv2.Sobel(img2, cv2.CV_64F, 0, 1, 3)
+    dx_2 = cv2.Sobel(img2, cv2.CV_64F, 1, 0)
+    dy_2 = cv2.Sobel(img2, cv2.CV_64F, 0, 1)
 
-    # Get the mean of the derives and the temporal derive
+    # Get the mean of the derives and the temporal derivative
     dx = (dx_1*0.5 + dx_2*0.5)
     dy = (dy_1*0.5 + dy_2*0.5)
     dt = img2_gauss - img1_gauss
 
     return dx, dy, dt
+
 
 @jit
 def multiplyMatrix(dx, dy, dt):
@@ -63,6 +65,20 @@ def multiplyMatrix2(Ix2, Iy2, Ixy, Ixt, Iyt):
     return M0, M1, M2, M3, M4, M5
 
 
+# @jit
+def initVariables(im_shape, k_gauss, n_iter, lam_pond, dx, dy, dt):
+    u_m = np.zeros(im_shape)
+    v_m = np.zeros(im_shape)
+
+    for it in range(n_iter):
+        u_m = cv2.GaussianBlur(u_m, k_gauss, 0)
+        v_m = cv2.GaussianBlur(v_m, k_gauss, 0)
+        ratio = ((np.multiply(dx, u_m) + np.multiply(dy, v_m) + dt) / (lam_pond**2 + dx**2 + dy**2))
+        u_m = u_m - (dx * ratio)
+        v_m = v_m - (dy * ratio)
+
+    return u_m, v_m
+
 @jit
 def computeOF_LK_pinv(fr1, fr2, window, step, A, B, k_gauss):
     '''
@@ -80,10 +96,8 @@ def computeOF_LK_pinv(fr1, fr2, window, step, A, B, k_gauss):
     optical_flow = np.zeros_like(img1)
     h, w = img1.shape[:2]
 
-    # step = 1
-
     # Get derivatives and all the algorithm's matrix
-    dx, dy, dt = getDerivates(img1, img2, k_gauss)
+    dx, dy, dt = getDerivative(img1, img2, k_gauss)
     Ix_2, Iy_2, Ixy_2, Ixt_2, Iyt_2 = multiplyMatrix(dx, dy, dt)
 
     h_lim = int(np.ceil(h / window - 1))
@@ -137,10 +151,8 @@ def computeOF_LK_unrolled(fr1, fr2, window, step, k_gauss):
     optical_flow = np.zeros_like(img1)
     h, w = img1.shape[:2]
 
-    # step = 1
-
     # Get derivatives and all the algorithm's matrix
-    dx, dy, dt = getDerivates(img1, img2, k_gauss)
+    dx, dy, dt = getDerivative(img1, img2, k_gauss)
     Ix_2, Iy_2, Ixy_2, Ixt_2, Iyt_2 = multiplyMatrix(dx, dy, dt)
 
     h_lim = int(np.ceil(h / window - 1))
@@ -180,11 +192,31 @@ def computeOF_HS(fr1, fr2, window, step, k_gauss, n_iter, lam_pond):
     optical_flow = np.zeros_like(img1)
     h, w = img1.shape[:2]
 
-    # step = 1
-
     # Get derivatives and all the algorithm's matrix
-    dx, dy, dt = getDerivates(img1, img2, k_gauss)
-    Ix_2, Iy_2, Ixy_2, Ixt_2, Iyt_2 = multiplyMatrix(dx, dy, dt)
+    dx, dy, dt = getDerivative(img1, img2, k_gauss)
 
     h_lim = int(np.ceil(h / window - 1))
     w_lim = int(np.ceil(w / window - 1))
+    im_shape = img1.shape
+
+    u_m, v_m = initVariables(im_shape, k_gauss, n_iter, lam_pond, dx, dy, dt)
+
+    for i in range(h_lim):
+        for j in range(w_lim):
+            ii = i * window + step
+            jj = j * window + step
+
+            u = np.sum(np.sum(u_m[ii - step : ii + step, jj - step : jj + step]))
+            v = np.sum(np.sum(v_m[ii - step: ii + step, jj - step: jj + step]))
+
+            u_i = int(u)
+            v_i = int(v)
+
+            cv2.arrowedLine(img2, (jj, ii), (int(jj + u_i), int(ii + v_i)), (255, 255, 0))
+            cv2.arrowedLine(optical_flow, (jj, ii), (int(jj + u_i), int(ii + v_i)), (255, 255, 0))
+
+    result = np.concatenate((img2, optical_flow), axis= 1)
+    cv2.imshow("Optical flow", result)
+    cv2.waitKey(50)
+
+    return result
