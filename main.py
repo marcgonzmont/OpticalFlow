@@ -21,7 +21,7 @@ if __name__ == '__main__':
 
     # Configuration
     # mode: 0: LK-pinv, 1: LK-unrolled, 2: Horn&Schunck
-    mode_idx = 0
+    mode_idx = 1
     mode_names = {0: "Lucas-Kanade (pinv)", 1: "Lucas-Kanade (unrolled)", 2: "Horn&Schunck"}
     save = False
 
@@ -37,8 +37,7 @@ if __name__ == '__main__':
     window = [6, 9, 12]
     n = 5
     k_gauss = (n, n)
-
-
+    plt_step = 3
 
     # Get the frames of the sequence and make results folder
     seq_selected = sequences[seq_idx]
@@ -66,11 +65,11 @@ if __name__ == '__main__':
                 img2_rgb = cv2.cvtColor(np.array(img2_rgb), cv2.COLOR_RGB2BGR)
 
                 if mode_idx == 0:
-                    result = of.computeOF_LK_pinv(img1_rgb, img2_rgb, win, k_gauss)
+                    result = of.computeOF_LK_pinv(img1_rgb, img2_rgb, win, k_gauss, plt_step)
                 elif mode_idx == 1:
-                    result = of.computeOF_LK_unrolled(img1_rgb, img2_rgb, win, k_gauss)
+                    result = of.computeOF_LK_unrolled(img1_rgb, img2_rgb, win, k_gauss, plt_step)
                 elif mode_idx == 2:
-                    result = of.computeOF_HS(img1_rgb, img2_rgb, win, k_gauss, n_iter, lam_pond)
+                    result = of.computeOF_HS(img1_rgb, img2_rgb, win, k_gauss, n_iter, lam_pond, plt_step)
 
                 if save:
                     result_name = altsep.join((results_path, ''.join((str(mode_idx), '-', name_sequence, '-', str(win), '-', str(fr_idx), '-', str(fr_idx + 1), '.png'))))
@@ -81,11 +80,11 @@ if __name__ == '__main__':
                 img2 = cv2.imread(frames[fr_idx + 1])
 
                 if mode_idx == 0:
-                    result = of.computeOF_LK_pinv(img1, img2, win, k_gauss)
+                    result = of.computeOF_LK_pinv(img1, img2, win, k_gauss, plt_step)
                 elif mode_idx == 1:
-                    result = of.computeOF_LK_unrolled(img1, img2, win, k_gauss)
+                    result = of.computeOF_LK_unrolled(img1, img2, win, k_gauss, plt_step)
                 elif mode_idx == 2:
-                    result = of.computeOF_HS(img1, img2, win, k_gauss, n_iter, lam_pond)
+                    result = of.computeOF_HS(img1, img2, win, k_gauss, n_iter, lam_pond, plt_step)
 
                 if save:
                     result_name = altsep.join((results_path, ''.join((str(mode_idx), '-', name_sequence, '-', str(win), '-', str(fr_idx), '-', str(fr_idx + 1), '.png'))))
