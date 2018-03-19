@@ -21,7 +21,7 @@ if __name__ == '__main__':
 
     # Configuration
     # mode: 0: LK-pinv, 1: LK-unrolled, 2: Horn&Schunck
-    mode_idx = 1
+    mode_idx = 2
     mode_names = {0: "Lucas-Kanade (pinv)", 1: "Lucas-Kanade (unrolled)", 2: "Horn&Schunck"}
     save = False
 
@@ -31,10 +31,10 @@ if __name__ == '__main__':
 
     # For Horn&Schonck algorithm
     n_iter = 50  # 10 - 100
-    lam_pond = 3  # 0.1 - 60
+    lam_pond = 1  # 0.1 - 60
 
     ext = conf_seq[seq_idx]
-    window = [6, 9, 12]
+    window = [5, 9, 15]
     n = 5
     k_gauss = (n, n)
     plt_step = 3
@@ -72,7 +72,12 @@ if __name__ == '__main__':
                     result = of.computeOF_HS(img1_rgb, img2_rgb, win, k_gauss, n_iter, lam_pond, plt_step)
 
                 if save:
-                    result_name = altsep.join((results_path, ''.join((str(mode_idx), '-', name_sequence, '-', str(win), '-', str(fr_idx), '-', str(fr_idx + 1), '.png'))))
+                    if mode_idx != 2:
+                        result_name = altsep.join((results_path, ''.join((str(mode_idx), '-', name_sequence, '-', str(win), '-', str(fr_idx), '-', str(fr_idx + 1), '.png'))))
+                    else:
+                        result_name = altsep.join((results_path, ''.join((str(mode_idx), '-', n_iter, '-', lam_pond, '-', name_sequence, '-',
+                                                                          str(win), '-', str(fr_idx), '-',
+                                                                          str(fr_idx + 1), '.png'))))
                     cv2.imwrite(result_name, result)
 
             elif ext == '.ppm' or ext == '.jpg':
@@ -87,7 +92,12 @@ if __name__ == '__main__':
                     result = of.computeOF_HS(img1, img2, win, k_gauss, n_iter, lam_pond, plt_step)
 
                 if save:
-                    result_name = altsep.join((results_path, ''.join((str(mode_idx), '-', name_sequence, '-', str(win), '-', str(fr_idx), '-', str(fr_idx + 1), '.png'))))
+                    if mode_idx != 2:
+                        result_name = altsep.join((results_path, ''.join((str(mode_idx), '-', name_sequence, '-', str(win), '-', str(fr_idx), '-', str(fr_idx + 1), '.png'))))
+                    else:
+                        result_name = altsep.join((results_path, ''.join((str(mode_idx), '-', n_iter, '-', lam_pond, '-', name_sequence, '-',
+                                                                          str(win), '-', str(fr_idx), '-',
+                                                                          str(fr_idx + 1), '.png'))))
                     cv2.imwrite(result_name, result)
 
         time_taken = time.time() - start

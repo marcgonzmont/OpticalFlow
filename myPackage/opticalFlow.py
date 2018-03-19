@@ -80,19 +80,6 @@ def initVariables(im_shape, k_gauss, n_iter, lam_pond, dx, dy, dt):
     return u_m, v_m
 
 
-def draw_hsv(fx, fy):
-    h, w = fx.shape
-    ang = np.arctan2(fy, fx) + np.pi
-    v = np.sqrt(fx*fx+fy*fy)
-    hsv = np.zeros((h, w, 3), np.uint8)
-    hsv[...,0] = ang*(180/np.pi/2)
-    hsv[...,1] = 255
-    hsv[...,2] = np.minimum(v*4, 255)
-    bgr = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
-
-    return bgr
-
-
 @jit
 def computeOF_LK_pinv(fr1, fr2, window, k_gauss, plt_step):
     '''
@@ -145,33 +132,11 @@ def computeOF_LK_pinv(fr1, fr2, window, k_gauss, plt_step):
                 cv2.arrowedLine(optical_flow, (j, i), (j + u, i + v), (255, 255, 0))
 
     result = np.concatenate((img2, optical_flow), axis= 1)
-    cv2.imshow("Optical flow", result)
+    cv2.imshow("Optical flow Lucas-Kanade (pinv)", result)
     cv2.waitKey(50)
     # cv2.destroyAllWindows()
 
     return result
-
-
-'''
-@jit
-def computeOF_OCV(fr1, fr2, window):
-    optical_flow = np.zeros_like(fr1)
-    optical_flow[..., 1] = 255
-
-    flow = cv2.calcOpticalFlowFarneback(fr1, fr2, None, 0, 1, window, 1, 1, 1, 1)
-    mag, ang = cv2.cartToPolar(flow[...,0], flow[...,1])
-    optical_flow[...,0] = ang*180/np.pi/2
-    optical_flow[...,2] = cv2.normalize(mag,None,0,255,cv2.NORM_MINMAX)
-    optical_flow = cv2.cvtColor(optical_flow,cv2.COLOR_HSV2BGR)
-
-    result = np.concatenate((fr2, optical_flow), axis= 1)
-
-    cv2.imshow("Optical flow", result)
-    cv2.waitKey()
-
-    return result
-'''
-
 
 @jit
 def computeOF_LK_unrolled(fr1, fr2, window, k_gauss, plt_step):
@@ -195,16 +160,20 @@ def computeOF_LK_unrolled(fr1, fr2, window, k_gauss, plt_step):
             Iyt = -np.sum(Iyt_2[i - step: i + step, j - step: j + step])
 
             M0, M1, M2, M3, M4, M5 = multiplyMatrix2(Ix2, Iy2, Ixy, Ixt, Iyt)
+            div = (M2 - M3)
 
-            u = int(np.floor((M0 + M1) / (M2 - M3)))
-            v = int(np.floor((M4 + M5) / (M2 - M3)))
+            if div != 0:
+                u = int(np.floor((M0 + M1) / (M2 - M3)))
+                v = int(np.floor((M4 + M5) / (M2 - M3)))
+            else:
+                continue
 
             if i % plt_step == 0 and j % plt_step == 0:
                 cv2.arrowedLine(img2, (j, i), (j + u, i + v), (255, 255, 0))
                 cv2.arrowedLine(optical_flow, (j, i), (j + u, i + v), (255, 255, 0))
 
     result = np.concatenate((img2, optical_flow), axis= 1)
-    cv2.imshow("Optical flow", result)
+    cv2.imshow("Optical flow Lucas-Kanade (unrolled)", result)
     cv2.waitKey(50)
 
     return result
@@ -239,7 +208,7 @@ def computeOF_HS(fr1, fr2, window, k_gauss, n_iter, lam_pond, plt_step):
                 cv2.arrowedLine(optical_flow, (j, i), (j + u_i, i + v_i), (255, 255, 0))
 
     result = np.concatenate((img2, optical_flow), axis= 1)
-    cv2.imshow('Optical flow', result)
+    cv2.imshow('Optical flow Horn&Schunck', result)
     cv2.waitKey(50)
 
     return result
